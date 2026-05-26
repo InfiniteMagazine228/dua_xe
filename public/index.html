@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Game Đua Xe Vô Hạn</title>
+  <title>Game Đua Xe</title>
   <style>
     body { margin:0; background:#222; text-align:center; }
     canvas { background:#333; display:block; margin:auto; }
@@ -18,7 +18,9 @@
 <body>
 <div id="menu">
   <h1>Game Đua Xe</h1>
-  <button onclick="startGame()">Bắt đầu</button>
+  <button onclick="startGame('easy')">Easy</button>
+  <button onclick="startGame('medium')">Medium</button>
+  <button onclick="startGame('hard')">Hard</button>
 </div>
 <div id="gameOver" style="display:none;">
   <h1>Game Over</h1>
@@ -31,39 +33,51 @@
   <button onclick="moveRight()">➡️</button>
 </div>
 
-<audio id="engineSound" src="engine.mp3" loop></audio>
-<audio id="crashSound" src="crash.mp3"></audio>
-
 <script>
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
-let car, obstacles, score, roadY, gameRunning=false;
+
+let car, obstacles, bonuses, score, roadY, gameRunning=false;
+let obstacleSpeed, spawnRate, bonusRate;
+let carSprite = new Image();
+carSprite.src = "car_red.png"; // sprite PNG xe chính
+
+let difficultySettings = {
+  easy:   { speed:3, spawnRate:0.01, bonusRate:0.005 },
+  medium: { speed:5, spawnRate:0.03, bonusRate:0.01 },
+  hard:   { speed:7, spawnRate:0.05, bonusRate:0.02 }
+};
 
 function resetGame(){
   car = { x:180, y:500, width:40, height:80, speed:5 };
   obstacles = [];
+  bonuses = [];
   score = 0;
   roadY = 0;
 }
 
-function startGame(){
+function startGame(level){
+  let diff = difficultySettings[level];
+  obstacleSpeed = diff.speed;
+  spawnRate = diff.spawnRate;
+  bonusRate = diff.bonusRate;
   document.getElementById("menu").style.display="none";
   document.getElementById("gameOver").style.display="none";
   resetGame();
   gameRunning=true;
-  document.getElementById("engineSound").play();
+  levelUp();
   requestAnimationFrame(gameLoop);
 }
 
-function restartGame(){ startGame(); }
+function restartGame(){ startGame('easy'); }
 
 document.addEventListener("keydown", e=>{
   if(e.key==="ArrowLeft") moveLeft();
   if(e.key==="ArrowRight") moveRight();
 });
 
-function moveLeft(){ if(car.x>0) car.x-=car.speed*2; }
-function moveRight(){ if(car.x<canvas.width-car.width) car.x+=car.speed*2; }
+function moveLeft(){ if(car.x>100) car.x-=car.speed*2; }
+function moveRight(){ if(car.x<300-car.width) car.x+=car.speed*2; }
 
 function drawRoad(){
   ctx.fillStyle="#555"; ctx.fillRect(100,0,200,canvas.height);
@@ -72,34 +86,51 @@ function drawRoad(){
   roadY+=5; if(roadY>40) roadY=0;
 }
 
-function drawCar(){ ctx.fillStyle="red"; ctx.fillRect(car.x,car.y,car.width,car.height); }
+function drawCar(){ ctx.drawImage(carSprite, car.x, car.y, car.width, car.height); }
 
 function drawObstacles(){
-  if(Math.random()<0.03){
-    let obsX=100+Math.random()*160;
-    obstacles.push({x:obsX,y:-80,width:40,height:80});
+  if(Math.random()<spawnRate){
+    obstacles.push({x:100+Math.random()*160,y:-80,width:40,height:80});
   }
-  ctx.fillStyle="blue";
-  obstacles.forEach(o=>{ o.y+=5; ctx.fillRect(o.x,o.y,o.width,o.height); });
+  let obsSprite = new Image();
+  obsSprite.src = "car_blue.png"; // sprite PNG xe chướng ngại vật
+  obstacles.forEach(o=>{ o.y+=obstacleSpeed; ctx.drawImage(obsSprite,o.x,o.y,o.width,o.height); });
   obstacles=obstacles.filter(o=>o.y<canvas.height);
+}
+
+function drawBonuses(){
+  if(Math.random()<bonusRate){
+    bonuses.push({x:100+Math.random()*160,y:-40,width:30,height:30});
+  }
+  ctx.fillStyle="yellow";
+  bonuses.forEach(b=>{ b.y+=obstacleSpeed; ctx.beginPath(); ctx.arc(b.x,b.y,15,0,Math.PI*2); ctx.fill(); });
+  bonuses=bonuses.filter(b=>b.y<canvas.height);
 }
 
 function checkCollision(){
   for(let o of obstacles){
     if(car.x<o.x+o.width && car.x+car.width>o.x && car.y<o.y+o.height && car.y+car.height>o.y){
       gameRunning=false;
-      document.getElementById("engineSound").pause();
-      document.getElementById("crashSound").play();
       document.getElementById("finalScore").innerText="Điểm số: "+score;
       document.getElementById("gameOver").style.display="flex";
     }
   }
+  for(let b of bonuses){
+    if(car.x<b.x+b.width && car.x+car.width>b.x && car.y<b.y+b.height && car.y+car.height>b.y){
+      score+=50; // cộng điểm thưởng
+      bonuses.splice(bonuses.indexOf(b),1);
+    }
+  }
+}
+
+function levelUp(){
+  setInterval(()=>{ obstacleSpeed++; },30000); // tăng tốc mỗi 30 giây
 }
 
 function gameLoop(){
   if(!gameRunning) return;
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  drawRoad(); drawCar(); drawObstacles(); checkCollision();
+  drawRoad(); drawCar(); drawObstacles(); drawBonuses(); checkCollision();
   score++; ctx.fillStyle="white"; ctx.fillText("Score: "+score,10,20);
   requestAnimationFrame(gameLoop);
 }
