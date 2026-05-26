@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Game Đua Xe Vô Hạn</title>
+  <style>
+    body { margin:0; background:#222; text-align:center; }
+    canvas { background:#333; display:block; margin:auto; }
+    #menu, #gameOver {
+      position:absolute; top:0; left:0; width:100%; height:100%;
+      background:rgba(0,0,0,0.8); color:white; display:flex;
+      justify-content:center; align-items:center; flex-direction:column;
+    }
+    button { padding:10px 20px; margin:10px; font-size:18px; }
+    #mobileControls { position:absolute; bottom:20px; width:100%; display:flex; justify-content:space-around; }
+    #mobileControls button { width:80px; height:80px; border-radius:50%; font-size:24px; }
+  </style>
+</head>
+<body>
+<div id="menu">
+  <h1>Game Đua Xe</h1>
+  <button onclick="startGame()">Bắt đầu</button>
+</div>
+<div id="gameOver" style="display:none;">
+  <h1>Game Over</h1>
+  <p id="finalScore"></p>
+  <button onclick="restartGame()">Chơi lại</button>
+</div>
+<canvas id="gameCanvas" width="400" height="600"></canvas>
+<div id="mobileControls">
+  <button onclick="moveLeft()">⬅️</button>
+  <button onclick="moveRight()">➡️</button>
+</div>
+
+<audio id="engineSound" src="engine.mp3" loop></audio>
+<audio id="crashSound" src="crash.mp3"></audio>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+let car, obstacles, score, roadY, gameRunning=false;
+
+function resetGame(){
+  car = { x:180, y:500, width:40, height:80, speed:5 };
+  obstacles = [];
+  score = 0;
+  roadY = 0;
+}
+
+function startGame(){
+  document.getElementById("menu").style.display="none";
+  document.getElementById("gameOver").style.display="none";
+  resetGame();
+  gameRunning=true;
+  document.getElementById("engineSound").play();
+  requestAnimationFrame(gameLoop);
+}
+
+function restartGame(){ startGame(); }
+
+document.addEventListener("keydown", e=>{
+  if(e.key==="ArrowLeft") moveLeft();
+  if(e.key==="ArrowRight") moveRight();
+});
+
+function moveLeft(){ if(car.x>0) car.x-=car.speed*2; }
+function moveRight(){ if(car.x<canvas.width-car.width) car.x+=car.speed*2; }
+
+function drawRoad(){
+  ctx.fillStyle="#555"; ctx.fillRect(100,0,200,canvas.height);
+  ctx.strokeStyle="white"; ctx.setLineDash([20,20]); ctx.lineWidth=4;
+  ctx.beginPath(); ctx.moveTo(200,roadY); ctx.lineTo(200,canvas.height+roadY); ctx.stroke();
+  roadY+=5; if(roadY>40) roadY=0;
+}
+
+function drawCar(){ ctx.fillStyle="red"; ctx.fillRect(car.x,car.y,car.width,car.height); }
+
+function drawObstacles(){
+  if(Math.random()<0.03){
+    let obsX=100+Math.random()*160;
+    obstacles.push({x:obsX,y:-80,width:40,height:80});
+  }
+  ctx.fillStyle="blue";
+  obstacles.forEach(o=>{ o.y+=5; ctx.fillRect(o.x,o.y,o.width,o.height); });
+  obstacles=obstacles.filter(o=>o.y<canvas.height);
+}
+
+function checkCollision(){
+  for(let o of obstacles){
+    if(car.x<o.x+o.width && car.x+car.width>o.x && car.y<o.y+o.height && car.y+car.height>o.y){
+      gameRunning=false;
+      document.getElementById("engineSound").pause();
+      document.getElementById("crashSound").play();
+      document.getElementById("finalScore").innerText="Điểm số: "+score;
+      document.getElementById("gameOver").style.display="flex";
+    }
+  }
+}
+
+function gameLoop(){
+  if(!gameRunning) return;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  drawRoad(); drawCar(); drawObstacles(); checkCollision();
+  score++; ctx.fillStyle="white"; ctx.fillText("Score: "+score,10,20);
+  requestAnimationFrame(gameLoop);
+}
+</script>
+</body>
+</html>
