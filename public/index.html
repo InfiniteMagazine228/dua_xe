@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Game Đua Xe</title>
+  <title>Game Đua Xe Vô Hạn</title>
   <style>
     body { margin:0; background:#222; text-align:center; }
     canvas { background:#333; display:block; margin:auto; }
@@ -39,8 +39,14 @@ const ctx = canvas.getContext("2d");
 
 let car, obstacles, bonuses, score, roadY, gameRunning=false;
 let obstacleSpeed, spawnRate, bonusRate;
+
+// Sprite PNG
 let carSprite = new Image();
-carSprite.src = "car_red.png"; // sprite PNG xe chính
+carSprite.src = "car_red.png"; 
+let obsSprite = new Image();
+obsSprite.src = "car_blue.png"; 
+let bonusSprite = new Image();
+bonusSprite.src = "star.png"; // bonus item
 
 let difficultySettings = {
   easy:   { speed:3, spawnRate:0.01, bonusRate:0.005 },
@@ -69,7 +75,10 @@ function startGame(level){
   requestAnimationFrame(gameLoop);
 }
 
-function restartGame(){ startGame('easy'); }
+function restartGame(){ 
+  document.getElementById("gameOver").style.display="none";
+  document.getElementById("menu").style.display="flex";
+}
 
 document.addEventListener("keydown", e=>{
   if(e.key==="ArrowLeft") moveLeft();
@@ -86,15 +95,22 @@ function drawRoad(){
   roadY+=5; if(roadY>40) roadY=0;
 }
 
-function drawCar(){ ctx.drawImage(carSprite, car.x, car.y, car.width, car.height); }
+function drawCar(){
+  if (carSprite.complete) {
+    ctx.drawImage(carSprite, car.x, car.y, car.width, car.height);
+  }
+}
 
 function drawObstacles(){
   if(Math.random()<spawnRate){
     obstacles.push({x:100+Math.random()*160,y:-80,width:40,height:80});
   }
-  let obsSprite = new Image();
-  obsSprite.src = "car_blue.png"; // sprite PNG xe chướng ngại vật
-  obstacles.forEach(o=>{ o.y+=obstacleSpeed; ctx.drawImage(obsSprite,o.x,o.y,o.width,o.height); });
+  obstacles.forEach(o=>{
+    o.y+=obstacleSpeed;
+    if (obsSprite.complete) {
+      ctx.drawImage(obsSprite,o.x,o.y,o.width,o.height);
+    }
+  });
   obstacles=obstacles.filter(o=>o.y<canvas.height);
 }
 
@@ -102,8 +118,12 @@ function drawBonuses(){
   if(Math.random()<bonusRate){
     bonuses.push({x:100+Math.random()*160,y:-40,width:30,height:30});
   }
-  ctx.fillStyle="yellow";
-  bonuses.forEach(b=>{ b.y+=obstacleSpeed; ctx.beginPath(); ctx.arc(b.x,b.y,15,0,Math.PI*2); ctx.fill(); });
+  bonuses.forEach(b=>{
+    b.y+=obstacleSpeed;
+    if (bonusSprite.complete) {
+      ctx.drawImage(bonusSprite, b.x, b.y, b.width, b.height);
+    }
+  });
   bonuses=bonuses.filter(b=>b.y<canvas.height);
 }
 
@@ -130,8 +150,14 @@ function levelUp(){
 function gameLoop(){
   if(!gameRunning) return;
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  drawRoad(); drawCar(); drawObstacles(); drawBonuses(); checkCollision();
-  score++; ctx.fillStyle="white"; ctx.fillText("Score: "+score,10,20);
+  drawRoad();
+  drawCar();
+  drawObstacles();
+  drawBonuses();
+  checkCollision();
+  score++;
+  ctx.fillStyle="white";
+  ctx.fillText("Score: "+score,10,20);
   requestAnimationFrame(gameLoop);
 }
 </script>
