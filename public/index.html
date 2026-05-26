@@ -41,12 +41,12 @@ let car, obstacles, bonuses, score, roadY, gameRunning=false;
 let obstacleSpeed, spawnRate, bonusRate;
 
 // Sprite PNG
-let carSprite = new Image();
-carSprite.src = "car_red.png"; 
-let obsSprite = new Image();
-obsSprite.src = "car_blue.png"; 
-let bonusSprite = new Image();
-bonusSprite.src = "star.png"; // bonus item
+const carSprite = new Image();
+carSprite.src = "car_red.png";
+const obsSprite = new Image();
+obsSprite.src = "car_blue.png";
+const bonusSprite = new Image();
+bonusSprite.src = "star.png";
 
 let difficultySettings = {
   easy:   { speed:3, spawnRate:0.01, bonusRate:0.005 },
